@@ -1,6 +1,6 @@
 # Portal de Objetivos en Cascada
 
-Aplicación preparada para https://ic-academy.github.io/Proyectos/
+Aplicación preparada para https://ic-academy.github.io/Objetivos-IC/
 
 ## Publicación
 
