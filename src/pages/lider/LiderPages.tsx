@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { useApp } from "../../context/AppContext";
-import { Badge, EstadoBadge, PrioridadBadge, ProgressBar, EmptyState, AlertBox, Avatar, formatoFecha } from "../../components/ui";
+import { useApp } from "../../context/useApp";
+import { Badge, EstadoBadge, PrioridadBadge, ProgressBar, EmptyState, AlertBox, Avatar } from "../../components/ui";
+import { formatoFecha } from "../../utils/format";
 import { objetivosVisibles, resumenObjetivo, proyectosDeArea, kpisActividades, nombreUsuario } from "../../services/selectors";
 import { avanceProyecto, estadoEfectivo, hijosDe, raicesDeProyecto } from "../../services/calc";
 import { ProyectoFormModal } from "../../components/ProyectoFormModal";
@@ -68,10 +69,10 @@ export function MisObjetivosLider() {
 export function ProyectosDelArea({ onAbrirProyecto }: { onAbrirProyecto: (id: string) => void }) {
   const { db, usuarioActual } = useApp();
   const [objetivoId, setObjetivoId] = useState<string>("");
+  const [modalOpen, setModalOpen] = useState(false);
   if (!usuarioActual) return null;
   const objetivos = objetivosVisibles(db, usuarioActual);
   const proyectos = proyectosDeArea(db, usuarioActual.areaId).filter((p) => !objetivoId || p.objetivoId === objetivoId);
-  const [modalOpen, setModalOpen] = useState(false);
 
   return (
     <div className="stack">

@@ -7,3 +7,8 @@ dist-ssr
 .vscode/*
 !.vscode/extensions.json
 npm-debug.log*
+
+# Playwright (pruebas end-to-end)
+/test-results/
+/playwright-report/
+/playwright/.cache/

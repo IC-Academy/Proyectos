@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { useApp } from "../../context/AppContext";
-import { KPICard, Badge, EstadoBadge, ProgressBar, AlertBox, EmptyState, formatoFecha } from "../../components/ui";
+import { useApp } from "../../context/useApp";
+import { KPICard, Badge, EstadoBadge, ProgressBar, AlertBox, EmptyState } from "../../components/ui";
+import { formatoFecha } from "../../utils/format";
 import { resumenObjetivo, nombreArea, nombreUsuario } from "../../services/selectors";
 import { detectarCuellosDeBotella } from "../../services/bottleneck";
 import { CascadaView } from "../../components/CascadaView";

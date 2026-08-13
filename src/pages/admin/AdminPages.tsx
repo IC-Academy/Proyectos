@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { useApp } from "../../context/AppContext";
-import { KPICard, Badge, EstadoBadge, ProgressBar, AlertBox, Modal, EmptyState, formatoFecha, formatoFechaHora, Avatar } from "../../components/ui";
+import { useApp } from "../../context/useApp";
+import { KPICard, Badge, EstadoBadge, ProgressBar, AlertBox, Modal, EmptyState, Avatar } from "../../components/ui";
+import { formatoFecha, formatoFechaHora } from "../../utils/format";
 import { kpisActividades, misActividades, nombreArea, nombreUsuario } from "../../services/selectors";
 import { estadoEfectivo } from "../../services/calc";
 import { BandejaAprobaciones } from "../../components/SolicitudesUI";

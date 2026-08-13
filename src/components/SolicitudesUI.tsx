@@ -1,22 +1,10 @@
 import React, { useState } from "react";
-import { useApp } from "../context/AppContext";
-import { AlertBox, Badge, EstadoBadge, PrioridadBadge, formatoFecha, colorPorEstado } from "./ui";
+import { useApp } from "../context/useApp";
+import { AlertBox, Badge, PrioridadBadge } from "./ui";
 import type { SolicitudInterarea } from "../types";
 import { nombreUsuario, nombreArea } from "../services/selectors";
-
-function colorEstatusSolicitud(estatus: string) {
-  switch (estatus) {
-    case "Aceptada":
-      return "green";
-    case "Rechazada":
-    case "Cancelada":
-      return "red";
-    case "Cambios solicitados":
-      return "yellow";
-    default:
-      return "orange";
-  }
-}
+import { formatoFecha } from "../utils/format";
+import { colorEstatusSolicitud } from "../utils/badges";
 
 function DetalleSolicitud({ s }: { s: SolicitudInterarea }) {
   const { db } = useApp();
@@ -163,5 +151,3 @@ export function ListaMisSolicitudes({ usuarioId }: { usuarioId: string }) {
     </div>
   );
 }
-
-export { colorEstatusSolicitud, colorPorEstado };

@@ -1,17 +1,7 @@
-import React, { createContext, useCallback, useContext, useMemo, useSyncExternalStore } from "react";
-import type { DemoDatabase, Usuario } from "../types";
+import React, { useCallback, useMemo, useSyncExternalStore } from "react";
 import { store } from "../services/store";
 import { loadSessionUserId, saveSessionUserId } from "../services/storage";
-
-interface AppContextValue {
-  db: DemoDatabase;
-  usuarioActual: Usuario | null;
-  login: (correo: string, password: string) => { ok: boolean; error?: string };
-  logout: () => void;
-  store: typeof store;
-}
-
-const AppContext = createContext<AppContextValue | null>(null);
+import { AppContext, type AppContextValue } from "./AppContextBase";
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const db = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
@@ -38,10 +28,4 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<AppContextValue>(() => ({ db, usuarioActual, login, logout, store }), [db, usuarioActual, login, logout]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
-}
-
-export function useApp(): AppContextValue {
-  const ctx = useContext(AppContext);
-  if (!ctx) throw new Error("useApp debe usarse dentro de <AppProvider>");
-  return ctx;
 }

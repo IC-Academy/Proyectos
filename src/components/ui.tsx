@@ -1,52 +1,12 @@
 import React from "react";
+import { type ColorBadge, colorPorEstado, colorPorPrioridad, iniciales } from "../utils/badges";
 
 // ============================================================================
 // Componentes de interfaz compartidos (tarjetas, badges, progreso, modal...)
+// Este archivo solo exporta componentes: los helpers puros (formato de fecha,
+// colores de estatus, iniciales) viven en src/utils/ para no romper el fast
+// refresh de React y mantener cada archivo enfocado en un único propósito.
 // ============================================================================
-
-export function iniciales(nombre: string): string {
-  return nombre
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((p) => p[0]?.toUpperCase())
-    .join("");
-}
-
-type ColorBadge = "green" | "yellow" | "red" | "purple" | "gray" | "blue" | "orange";
-
-export function colorPorEstado(estado: string): ColorBadge {
-  switch (estado) {
-    case "Completada":
-      return "green";
-    case "En tiempo":
-    case "En progreso":
-      return "blue";
-    case "Por vencer":
-      return "yellow";
-    case "Vencida":
-      return "red";
-    case "Bloqueada":
-      return "purple";
-    case "Pendiente de aprobación":
-      return "orange";
-    default:
-      return "gray";
-  }
-}
-
-export function colorPorPrioridad(p: string): ColorBadge {
-  switch (p) {
-    case "Crítica":
-      return "red";
-    case "Alta":
-      return "orange";
-    case "Media":
-      return "blue";
-    default:
-      return "gray";
-  }
-}
 
 export function Badge({ children, color = "gray" }: { children: React.ReactNode; color?: ColorBadge }) {
   return <span className={`badge badge-${color}`}>{children}</span>;
@@ -146,22 +106,4 @@ export function AlertBox({ tipo, children }: { tipo: "warn" | "error" | "info" |
       <div>{children}</div>
     </div>
   );
-}
-
-export function formatoFecha(iso: string): string {
-  try {
-    const d = new Date(iso + "T00:00:00");
-    return d.toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" });
-  } catch {
-    return iso;
-  }
-}
-
-export function formatoFechaHora(iso: string): string {
-  try {
-    const d = new Date(iso);
-    return d.toLocaleDateString("es-MX", { day: "2-digit", month: "short" });
-  } catch {
-    return iso;
-  }
 }

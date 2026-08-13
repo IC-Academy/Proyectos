@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
-import { useApp } from "../context/AppContext";
+import { useApp } from "../context/useApp";
 import { filasGantt, type FilaGantt } from "../services/selectors";
-import { colorPorEstado } from "./ui";
+import { colorPorEstado } from "../utils/badges";
 
 const COLOR_HEX: Record<string, string> = {
   green: "#1f8f4e",

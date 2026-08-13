@@ -199,17 +199,69 @@ npm run build     # genera dist/ igual que lo hará GitHub Actions
 npm run preview   # sirve dist/ localmente para verificarlo
 ```
 
-## Verificación realizada antes de esta entrega
+## Calidad técnica: lint, build y pruebas end-to-end reproducibles
 
-- `npm ci` y `npm run build` (`tsc -b && vite build`) terminan sin errores.
+Esta sección documenta cómo verificar por cuenta propia, desde una instalación
+limpia, todo lo que se afirma sobre esta entrega. No es necesario confiar en
+la palabra de nadie: los tres comandos siguientes son deterministas.
+
+```bash
+rm -rf node_modules dist
+npm ci               # instalación limpia — PASS
+npm run build        # tsc -b && vite build — PASS
+npm run lint         # oxlint — PASS, 0 errores y 0 advertencias
+npm run test:e2e     # build de producción + Playwright — PASS, 14/14 pruebas
+```
+
+`npm run test:e2e` reconstruye `dist/` automáticamente (hook `pretest:e2e`) y
+levanta un servidor local (`vite preview`) sirviendo esa build bajo la misma
+base `/Proyectos/` que usa GitHub Pages, para probar exactamente lo que se
+publica — no el entorno de desarrollo.
+
+### Suite de pruebas (`tests/e2e/`, Playwright)
+
+Configuración en `playwright.config.ts` (proyecto Chromium, capturas y video
+en cada corrida, reporte HTML). Casos ejecutables:
+
+- **`01-login-y-roles.spec.ts`** — login inválido; para cada uno de los 4
+  roles (Administrador, Dirección, Líder, Colaborador) verifica que el menú
+  mostrado corresponde exactamente a su rol, que no existe ningún control para
+  cambiar de rol manualmente, y que la sesión persiste tras recargar.
+- **`02-objetivo-smart.spec.ts`** — el constructor SMART bloquea la creación
+  cuando las ponderaciones de área no suman 100% (la IA simulada explica el
+  motivo); un objetivo SMART completo (Ventas 50% / Marketing 30% /
+  Operaciones 20%) se crea correctamente y aparece calificado en el listado.
+- **`03-flujo-cascada-completo.spec.ts`** — reproduce el criterio de
+  aceptación íntegro en un solo recorrido: Daniela ve la actividad de Dante →
+  Dante la divide en subactividades y solicita apoyo interárea a Jorge (BI) →
+  Daniela aprueba como líder solicitante → Jorge aprueba como líder del área
+  requerida (se crea la actividad real) → Jorge actualiza su avance → Dirección
+  verifica que el dashboard, la cascada (con el panel de cuello de botella) y
+  el Gantt reflejan la propagación. Cada paso adjunta una captura de pantalla
+  al reporte HTML como evidencia (11 capturas numeradas).
+- **`04-admin-y-resiliencia.spec.ts`** — edición de un usuario por el
+  Administrador; botón "Restablecer datos de demostración"; filtro del Gantt
+  por área; alta de un comentario en una actividad; y recuperación automática
+  cuando el `localStorage` contiene datos corruptos (la aplicación nunca queda
+  en blanco).
+
+Para ver el reporte con las capturas de evidencia después de correr las
+pruebas:
+
+```bash
+npx playwright show-report
+```
+
+> Este entorno de desarrollo ya trae Chromium preinstalado para Playwright. En
+> una máquina nueva sin esa configuración, si `npm run test:e2e` falla porque
+> no encuentra el navegador, ejecuta primero `npx playwright install chromium`.
+
+### Otras verificaciones incluidas
+
 - `dist/index.html` referencia únicamente archivos compilados dentro de
   `/Proyectos/assets/` (no contiene `<script type="module" src="/src/main.tsx">`).
-- Recorrido automatizado end-to-end (Playwright) que reproduce el criterio de
-  aceptación completo: login de los 4 roles, creación de objetivo SMART con
-  IA simulada, creación de proyecto y actividad por Daniela, creación de
-  subactividad y solicitud de apoyo por Dante, aprobación por Daniela y por
-  Jorge, actualización de avance de Jorge, y verificación de que el dashboard,
-  el Gantt y la cascada de Dirección reflejan la propagación del avance.
-- Verificación de que la sesión y los datos persisten tras recargar, de que el
-  botón "Restablecer demo" funciona, y de que corromper manualmente el
-  `localStorage` no deja la aplicación en blanco.
+- `npm run lint` (oxlint) corre sin ninguna excepción de reglas: sin hooks
+  condicionales, sin dependencias faltantes en `useEffect`, sin imports sin
+  usar y sin advertencias de `react/only-export-components` (los archivos que
+  mezclaban componentes con helpers/contexto se separaron en
+  `src/context/`, `src/utils/` y `src/components/menus.ts`).

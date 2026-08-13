@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { useApp } from "../../context/AppContext";
-import { KPICard, Badge, EstadoBadge, PrioridadBadge, ProgressBar, EmptyState, AlertBox, formatoFecha } from "../../components/ui";
+import { useApp } from "../../context/useApp";
+import { KPICard, Badge, EstadoBadge, PrioridadBadge, ProgressBar, EmptyState, AlertBox } from "../../components/ui";
+import { formatoFecha } from "../../utils/format";
 import { objetivosVisibles, misActividades, kpisActividades, resumenObjetivo, nombreUsuario } from "../../services/selectors";
 import { avanceEsperadoPorFecha, estadoEfectivo, hijosDe } from "../../services/calc";
 import { CascadaView } from "../../components/CascadaView";

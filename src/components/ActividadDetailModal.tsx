@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { useApp } from "../context/AppContext";
-import { Modal, AlertBox, Badge, EstadoBadge, PrioridadBadge, ProgressBar, formatoFecha, formatoFechaHora } from "./ui";
+import { useApp } from "../context/useApp";
+import { Modal, AlertBox, Badge, EstadoBadge, PrioridadBadge, ProgressBar } from "./ui";
+import { formatoFecha, formatoFechaHora } from "../utils/format";
 import { avanceEsperadoPorFecha, desviacion as calcDesviacion, esHoja, estadoEfectivo, hijosDe } from "../services/calc";
 import { nombreUsuario, nombreArea } from "../services/selectors";
 import { ActividadFormModal } from "./ActividadFormModal";

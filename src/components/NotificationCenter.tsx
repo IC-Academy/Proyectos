@@ -1,23 +1,12 @@
-import React, { useRef, useState } from "react";
-import { useApp } from "../context/AppContext";
-import { formatoFechaHora } from "./ui";
-
-export function useClickOutside(onOutside: () => void) {
-  const ref = useRef<HTMLDivElement>(null);
-  React.useEffect(() => {
-    function handler(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) onOutside();
-    }
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [onOutside]);
-  return ref;
-}
+import { useState } from "react";
+import { useApp } from "../context/useApp";
+import { formatoFechaHora } from "../utils/format";
+import { useClickOutside } from "../utils/useClickOutside";
 
 export function NotificationCenter({ onNavigateEntidad }: { onNavigateEntidad?: (tipo: string, id: string) => void }) {
   const { db, usuarioActual, store } = useApp();
   const [open, setOpen] = useState(false);
-  const ref = useClickOutside(() => setOpen(false));
+  const ref = useClickOutside<HTMLDivElement>(() => setOpen(false));
 
   if (!usuarioActual) return null;
   const mias = db.notificaciones.filter((n) => n.usuarioId === usuarioActual.usuarioId).sort((a, b) => (a.fecha < b.fecha ? 1 : -1));

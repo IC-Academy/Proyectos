@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useApp } from "./context/AppContext";
+import { useApp } from "./context/useApp";
 import { Login } from "./pages/Login";
 import { Layout } from "./components/Layout";
 import { ActividadDetailModal } from "./components/ActividadDetailModal";
@@ -55,10 +55,17 @@ export function App() {
   const [actividadAbiertaId, setActividadAbiertaId] = useState<string | null>(null);
   const [proyectoSeleccionadoLider, setProyectoSeleccionadoLider] = useState<string | null>(null);
 
+  // Se usan primitivos (id y rol) como dependencias, no el objeto `usuarioActual`
+  // completo: su referencia cambia en cada actualización del store (nueva foto
+  // inmutable de la base de datos) aunque la persona autenticada no cambie, y
+  // reiniciar la navegación en cada mutación sería un defecto, no una mejora.
+  const usuarioId = usuarioActual?.usuarioId ?? null;
+  const usuarioRol = usuarioActual?.rol ?? null;
+
   useEffect(() => {
-    if (usuarioActual) setActiveKey(DEFAULT_KEY[usuarioActual.rol]);
+    if (usuarioId && usuarioRol) setActiveKey(DEFAULT_KEY[usuarioRol]);
     else setActiveKey("");
-  }, [usuarioActual?.usuarioId]);
+  }, [usuarioId, usuarioRol]);
 
   if (!usuarioActual) return <Login />;
 

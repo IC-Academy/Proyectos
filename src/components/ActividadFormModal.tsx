@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useApp } from "../context/AppContext";
+import { useApp } from "../context/useApp";
 import { Modal, AlertBox } from "./ui";
 import type { PrioridadActividad } from "../types";
 

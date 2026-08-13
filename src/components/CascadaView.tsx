@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from "react";
-import { useApp } from "../context/AppContext";
+import { useApp } from "../context/useApp";
 import { construirCascada, type NodoCascada } from "../services/selectors";
 import { detectarCuellosDeBotella } from "../services/bottleneck";
-import { Badge, EstadoBadge, ProgressBar, colorPorEstado } from "./ui";
+import { Badge, ProgressBar } from "./ui";
+import { colorPorEstado } from "../utils/badges";
 
 const TIPO_LABEL: Record<string, string> = { objetivo: "Objetivo", area: "Área", proyecto: "Proyecto", actividad: "Actividad" };
 const TIPO_COLOR: Record<string, string> = { objetivo: "badge-blue", area: "badge-purple", proyecto: "badge-gray", actividad: "badge-gray" };

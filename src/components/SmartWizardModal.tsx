@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { useApp } from "../context/AppContext";
+import { useApp } from "../context/useApp";
 import { Modal, AlertBox } from "./ui";
 import { evaluarSmart, type InsumoSmart } from "../services/smartAi";
 

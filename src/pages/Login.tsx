@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useApp } from "../context/AppContext";
+import { useApp } from "../context/useApp";
 
 const CUENTAS_DEMO = [
   { correo: "gabriel@demo.com", rol: "Dirección", area: "Dirección General" },
