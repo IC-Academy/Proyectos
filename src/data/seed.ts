@@ -1,0 +1,910 @@
+import type {
+  Actividad,
+  Area,
+  Bitacora,
+  ConfiguracionEDD,
+  DemoDatabase,
+  Evidencia,
+  Notificacion,
+  Objetivo,
+  ObjetivoArea,
+  Periodo,
+  Proyecto,
+  SolicitudInterarea,
+  Aprobacion,
+  Usuario,
+  EddCampos,
+} from "../types";
+
+export const DB_VERSION = 4;
+
+// ---------------------------------------------------------------------------
+// Utilidades de fecha (relativas al momento en que se genera la demo, para
+// que las alertas de "por vencer" / "vencida" siempre luzcan realistas).
+// ---------------------------------------------------------------------------
+function iso(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+function addDays(base: Date, days: number): Date {
+  const d = new Date(base);
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
+const HOY = new Date();
+
+function eddVacio(over: Partial<EddCampos> & { empleadoId: string; actividadId: string; proyectoId: string; objetivoId: string }): EddCampos {
+  return {
+    periodoId: "PER-2025-2026",
+    cicloEvaluacionId: "EDD-2025-2026",
+    liderId: null,
+    indicador: "",
+    lineaBase: null,
+    meta: null,
+    unidad: "",
+    ponderacionEdd: 0,
+    avanceFinal: null,
+    cumplimientoCalculado: null,
+    evidencias: 0,
+    validadoPorLider: false,
+    fechaValidacion: null,
+    estatusIntegracionEdd: "Pendiente de ciclo",
+    ...over,
+  };
+}
+
+export function buildSeedDatabase(): DemoDatabase {
+  // -------------------------------------------------------------------
+  // ÁREAS
+  // -------------------------------------------------------------------
+  const areas: Area[] = [
+    { areaId: "AR-BI", nombre: "Inteligencia de Negocios", descripcion: "Datos, automatización y analítica interna.", colorHex: "#7c5cff", liderId: "U-JORGE" },
+    { areaId: "AR-DG", nombre: "Dirección General", descripcion: "Definición y seguimiento estratégico.", colorHex: "#071a35", liderId: "U-GABRIEL" },
+    { areaId: "AR-VEN", nombre: "Ventas", descripcion: "Prospección, cierre y relación comercial.", colorHex: "#1f8f4e", liderId: "U-DANIELA" },
+    { areaId: "AR-MKT", nombre: "Marketing", descripcion: "Generación de demanda y posicionamiento.", colorHex: "#e08a1e", liderId: "U-RENATA" },
+    { areaId: "AR-OPS", nombre: "Operaciones", descripcion: "Entrega, logística y soporte a ventas.", colorHex: "#c0392b", liderId: "U-MARCO" },
+  ];
+
+  // -------------------------------------------------------------------
+  // USUARIOS
+  // -------------------------------------------------------------------
+  const usuarios: Usuario[] = [
+    {
+      usuarioId: "U-JORGE",
+      empleadoId: "EMP-001",
+      nombre: "Jorge Mejía",
+      correo: "jorge@demo.com",
+      passwordDemo: "1234",
+      rol: "Administrador",
+      areaId: "AR-BI",
+      puesto: "Administrador de Plataforma / Líder de BI",
+      liderId: "U-GABRIEL",
+      nombreLider: "Gabriel Rosales",
+      activo: true,
+      personasACargo: [],
+      permisos: ["administrar_usuarios", "configurar_catalogos", "ver_todo", "restablecer_demo", "ver_bitacora", "aprobar_area_bi"],
+    },
+    {
+      usuarioId: "U-GABRIEL",
+      empleadoId: "EMP-002",
+      nombre: "Gabriel Rosales",
+      correo: "gabriel@demo.com",
+      passwordDemo: "1234",
+      rol: "Direccion",
+      areaId: "AR-DG",
+      puesto: "Director General",
+      liderId: null,
+      nombreLider: null,
+      activo: true,
+      personasACargo: ["U-DANIELA", "U-RENATA", "U-MARCO", "U-JORGE"],
+      permisos: ["crear_objetivos", "asignar_areas", "ver_dashboard_ejecutivo", "ver_cascada_completa"],
+    },
+    {
+      usuarioId: "U-DANIELA",
+      empleadoId: "EMP-003",
+      nombre: "Daniela Juárez",
+      correo: "daniela@demo.com",
+      passwordDemo: "1234",
+      rol: "Lider",
+      areaId: "AR-VEN",
+      puesto: "Líder de Ventas",
+      liderId: "U-GABRIEL",
+      nombreLider: "Gabriel Rosales",
+      activo: true,
+      personasACargo: ["U-DANTE", "U-LUCIA"],
+      permisos: ["crear_proyectos", "asignar_actividades", "aprobar_solicitudes", "validar_avances"],
+    },
+    {
+      usuarioId: "U-DANTE",
+      empleadoId: "EMP-004",
+      nombre: "Dante Osorio",
+      correo: "dante@demo.com",
+      passwordDemo: "1234",
+      rol: "Colaborador",
+      areaId: "AR-VEN",
+      puesto: "Ejecutivo Comercial",
+      liderId: "U-DANIELA",
+      nombreLider: "Daniela Juárez",
+      activo: true,
+      personasACargo: [],
+      permisos: ["actualizar_avance", "crear_subactividades", "solicitar_apoyo"],
+    },
+    {
+      usuarioId: "U-LUCIA",
+      empleadoId: "EMP-005",
+      nombre: "Lucía Fernández",
+      correo: "lucia@demo.com",
+      passwordDemo: "1234",
+      rol: "Colaborador",
+      areaId: "AR-VEN",
+      puesto: "Ejecutiva de Cuentas Clave",
+      liderId: "U-DANIELA",
+      nombreLider: "Daniela Juárez",
+      activo: true,
+      personasACargo: [],
+      permisos: ["actualizar_avance", "crear_subactividades", "solicitar_apoyo"],
+    },
+    {
+      usuarioId: "U-RENATA",
+      empleadoId: "EMP-006",
+      nombre: "Renata Solís",
+      correo: "renata@demo.com",
+      passwordDemo: "1234",
+      rol: "Lider",
+      areaId: "AR-MKT",
+      puesto: "Líder de Marketing",
+      liderId: "U-GABRIEL",
+      nombreLider: "Gabriel Rosales",
+      activo: true,
+      personasACargo: ["U-IVAN"],
+      permisos: ["crear_proyectos", "asignar_actividades", "aprobar_solicitudes", "validar_avances"],
+    },
+    {
+      usuarioId: "U-IVAN",
+      empleadoId: "EMP-007",
+      nombre: "Iván Cortés",
+      correo: "ivan@demo.com",
+      passwordDemo: "1234",
+      rol: "Colaborador",
+      areaId: "AR-MKT",
+      puesto: "Especialista en Demanda Digital",
+      liderId: "U-RENATA",
+      nombreLider: "Renata Solís",
+      activo: true,
+      personasACargo: [],
+      permisos: ["actualizar_avance", "crear_subactividades", "solicitar_apoyo"],
+    },
+    {
+      usuarioId: "U-MARCO",
+      empleadoId: "EMP-008",
+      nombre: "Marco Aguilar",
+      correo: "marco@demo.com",
+      passwordDemo: "1234",
+      rol: "Lider",
+      areaId: "AR-OPS",
+      puesto: "Líder de Operaciones",
+      liderId: "U-GABRIEL",
+      nombreLider: "Gabriel Rosales",
+      activo: true,
+      personasACargo: ["U-PAOLA"],
+      permisos: ["crear_proyectos", "asignar_actividades", "aprobar_solicitudes", "validar_avances"],
+    },
+    {
+      usuarioId: "U-PAOLA",
+      empleadoId: "EMP-009",
+      nombre: "Paola Núñez",
+      correo: "paola@demo.com",
+      passwordDemo: "1234",
+      rol: "Colaborador",
+      areaId: "AR-OPS",
+      puesto: "Analista de Logística",
+      liderId: "U-MARCO",
+      nombreLider: "Marco Aguilar",
+      activo: true,
+      personasACargo: [],
+      permisos: ["actualizar_avance", "crear_subactividades", "solicitar_apoyo"],
+    },
+  ];
+
+  // -------------------------------------------------------------------
+  // PERIODO
+  // -------------------------------------------------------------------
+  const periodos: Periodo[] = [
+    {
+      periodoId: "PER-2025-2026",
+      nombre: "Año Fiscal 2025-2026",
+      anioFiscal: "2025-2026",
+      fechaInicio: "2025-10-01",
+      fechaFin: "2026-09-30",
+      activo: true,
+    },
+  ];
+
+  // -------------------------------------------------------------------
+  // OBJETIVO ESTRATÉGICO
+  // -------------------------------------------------------------------
+  const objetivos: Objetivo[] = [
+    {
+      objetivoId: "OBJ-001",
+      nombreCorto: "Aumentar 30% las ventas",
+      descripcion:
+        "Incrementar las ventas cerradas de 100 a 130 durante el año fiscal comprendido entre octubre de 2025 y septiembre de 2026, mediante acciones coordinadas de Ventas, Marketing y Operaciones.",
+      resultadoEsperado: "Cerrar el año fiscal con 130 ventas, 30% por arriba del año anterior.",
+      indicador: "Ventas cerradas",
+      lineaBase: 100,
+      meta: 130,
+      unidad: "ventas",
+      fechaInicio: "2025-10-01",
+      fechaFin: "2026-09-30",
+      periodoId: "PER-2025-2026",
+      anioFiscal: "2025-2026",
+      relevanciaEstrategica: "Sostiene el plan de crecimiento anual y la rentabilidad comprometida con el consejo.",
+      evidenciaEsperada: "Reportes de CRM, cierres facturados y tablero comercial mensual.",
+      riesgosIniciales: "Rotación de cartera comercial, dependencia de capacidad operativa para cumplir tiempos de entrega.",
+      responsablePrincipalId: "U-GABRIEL",
+      smartScore: 92,
+      smartDetalle: null,
+      creadoPorId: "U-GABRIEL",
+      fechaCreacion: iso(addDays(HOY, -300)),
+      estatus: "Activo",
+    },
+  ];
+
+  const objetivoAreas: ObjetivoArea[] = [
+    { objetivoAreaId: "OA-1", objetivoId: "OBJ-001", areaId: "AR-VEN", ponderacion: 50 },
+    { objetivoAreaId: "OA-2", objetivoId: "OBJ-001", areaId: "AR-MKT", ponderacion: 30 },
+    { objetivoAreaId: "OA-3", objetivoId: "OBJ-001", areaId: "AR-OPS", ponderacion: 20 },
+  ];
+
+  // -------------------------------------------------------------------
+  // PROYECTOS (metas de área)
+  // -------------------------------------------------------------------
+  const proyectos: Proyecto[] = [
+    {
+      proyectoId: "PRY-VEN",
+      objetivoId: "OBJ-001",
+      areaId: "AR-VEN",
+      nombre: "Plan Comercial 2025-2026",
+      descripcion: "Aumentar el volumen de visitas y cierres comerciales del equipo de ventas.",
+      indicador: "Visitas y cierres comerciales",
+      lineaBase: 100,
+      meta: 130,
+      unidad: "ventas",
+      fechaInicio: "2025-10-01",
+      fechaFin: "2026-09-30",
+      ponderacion: 100,
+      responsableId: "U-DANIELA",
+      evidenciaEsperada: "Reportes CRM, bitácora de visitas.",
+      dependencias: "Capacidad de entrega de Operaciones.",
+      riesgos: "Rotación de cartera comercial.",
+      creadoPorId: "U-DANIELA",
+      fechaCreacion: iso(addDays(HOY, -280)),
+      estatus: "Activo",
+    },
+    {
+      proyectoId: "PRY-MKT",
+      objetivoId: "OBJ-001",
+      areaId: "AR-MKT",
+      nombre: "Plan de Generación de Demanda",
+      descripcion: "Generar leads calificados y fortalecer alianzas comerciales.",
+      indicador: "Leads calificados entregados a Ventas",
+      lineaBase: 40,
+      meta: 70,
+      unidad: "leads/mes",
+      fechaInicio: "2025-10-01",
+      fechaFin: "2026-09-30",
+      ponderacion: 100,
+      responsableId: "U-RENATA",
+      evidenciaEsperada: "Reportes de campañas y funnel de conversión.",
+      dependencias: "",
+      riesgos: "Presupuesto limitado de medios pagados.",
+      creadoPorId: "U-RENATA",
+      fechaCreacion: iso(addDays(HOY, -270)),
+      estatus: "Activo",
+    },
+    {
+      proyectoId: "PRY-OPS",
+      objetivoId: "OBJ-001",
+      areaId: "AR-OPS",
+      nombre: "Plan de Capacidad Operativa",
+      descripcion: "Garantizar tiempos de entrega y soporte a los cierres comerciales.",
+      indicador: "Cumplimiento de SLA de entrega",
+      lineaBase: 80,
+      meta: 95,
+      unidad: "% SLA",
+      fechaInicio: "2025-10-01",
+      fechaFin: "2026-09-30",
+      ponderacion: 100,
+      responsableId: "U-MARCO",
+      evidenciaEsperada: "Reportes de logística y SLA.",
+      dependencias: "Contratación de personal de almacén regional.",
+      riesgos: "Falta de personal en temporada alta.",
+      creadoPorId: "U-MARCO",
+      fechaCreacion: iso(addDays(HOY, -260)),
+      estatus: "Activo",
+    },
+  ];
+
+  // -------------------------------------------------------------------
+  // ACTIVIDADES (nivel 1: colgadas del proyecto; nivel 2+: subactividades)
+  // -------------------------------------------------------------------
+  const actividades: Actividad[] = [];
+
+  function nuevaActividad(a: Omit<Actividad, "fechaUltimaActualizacion" | "edd" | "bloqueada" | "motivoBloqueo" | "origenSolicitudId"> & { bloqueada?: boolean; motivoBloqueo?: string | null; origenSolicitudId?: string | null }) {
+    actividades.push({
+      ...a,
+      bloqueada: a.bloqueada ?? false,
+      motivoBloqueo: a.motivoBloqueo ?? null,
+      origenSolicitudId: a.origenSolicitudId ?? null,
+      fechaUltimaActualizacion: iso(addDays(HOY, -2)),
+      edd: eddVacio({
+        empleadoId: a.responsableId,
+        actividadId: a.actividadId,
+        proyectoId: a.proyectoId,
+        objetivoId: "OBJ-001",
+      }),
+    });
+  }
+
+  // -- Ventas: actividad de Dante --------------------------------------
+  nuevaActividad({
+    actividadId: "ACT-DANTE-1",
+    proyectoId: "PRY-VEN",
+    actividadPadreId: null,
+    nombre: "Concretar un mínimo de 10 visitas comerciales por semana",
+    descripcion: "Sostener el ritmo de prospección y cierre necesario para cumplir la meta trimestral de Ventas.",
+    responsableId: "U-DANTE",
+    areaResponsableId: "AR-VEN",
+    fechaInicio: "2025-10-01",
+    fechaFin: "2026-09-30",
+    prioridad: "Alta",
+    ponderacion: 70,
+    indicador: "Visitas comerciales por semana",
+    meta: "10 visitas / semana",
+    evidenciaEsperada: "Bitácora de visitas y reportes de CRM.",
+    dependeDeActividadId: null,
+    comentariosTexto: "Actividad derivada directamente del Plan Comercial 2025-2026.",
+    requiereApoyoInterarea: true,
+    avance: 0,
+    estado: "En progreso",
+    creadoPorId: "U-DANIELA",
+    fechaCreacion: iso(addDays(HOY, -270)),
+  });
+
+  nuevaActividad({
+    actividadId: "SUB-1",
+    proyectoId: "PRY-VEN",
+    actividadPadreId: "ACT-DANTE-1",
+    nombre: "Conseguir una cartera de prospectos",
+    descripcion: "Construir la base inicial de prospectos calificados para la temporada.",
+    responsableId: "U-DANTE",
+    areaResponsableId: "AR-VEN",
+    fechaInicio: "2025-10-01",
+    fechaFin: iso(addDays(HOY, -180)),
+    prioridad: "Media",
+    ponderacion: 20,
+    indicador: "Prospectos identificados",
+    meta: "150 prospectos",
+    evidenciaEsperada: "Listado de prospectos en CRM.",
+    dependeDeActividadId: null,
+    comentariosTexto: "",
+    requiereApoyoInterarea: false,
+    avance: 100,
+    estado: "Completada",
+    creadoPorId: "U-DANTE",
+    fechaCreacion: iso(addDays(HOY, -260)),
+  });
+
+  nuevaActividad({
+    actividadId: "SUB-2",
+    proyectoId: "PRY-VEN",
+    actividadPadreId: "ACT-DANTE-1",
+    nombre: "Contactar 50 personas diariamente",
+    descripcion: "Ejecutar el ritmo diario de contacto telefónico y digital con prospectos.",
+    responsableId: "U-DANTE",
+    areaResponsableId: "AR-VEN",
+    fechaInicio: "2025-10-15",
+    fechaFin: iso(addDays(HOY, 5)),
+    prioridad: "Alta",
+    ponderacion: 30,
+    indicador: "Contactos diarios",
+    meta: "50 contactos/día",
+    evidenciaEsperada: "Reporte de llamadas del CRM.",
+    dependeDeActividadId: "SUB-1",
+    comentariosTexto: "",
+    requiereApoyoInterarea: false,
+    avance: 70,
+    estado: "En progreso",
+    creadoPorId: "U-DANTE",
+    fechaCreacion: iso(addDays(HOY, -260)),
+  });
+
+  nuevaActividad({
+    actividadId: "SUB-3",
+    proyectoId: "PRY-VEN",
+    actividadPadreId: "ACT-DANTE-1",
+    nombre: "Solicitar un agente o mecanismo de prospección",
+    descripcion: "Gestionar la adquisición de una herramienta que agilice la prospección masiva.",
+    responsableId: "U-DANTE",
+    areaResponsableId: "AR-VEN",
+    fechaInicio: "2025-11-01",
+    fechaFin: iso(addDays(HOY, -10)),
+    prioridad: "Media",
+    ponderacion: 15,
+    indicador: "Herramienta contratada",
+    meta: "1 herramienta activa",
+    evidenciaEsperada: "Cotización y orden de compra.",
+    dependeDeActividadId: null,
+    comentariosTexto: "",
+    requiereApoyoInterarea: false,
+    avance: 40,
+    estado: "Bloqueada",
+    bloqueada: true,
+    motivoBloqueo: "Esperando aprobación de presupuesto para contratar la herramienta de prospección.",
+    creadoPorId: "U-DANTE",
+    fechaCreacion: iso(addDays(HOY, -255)),
+  });
+
+  nuevaActividad({
+    actividadId: "SUB-4",
+    proyectoId: "PRY-VEN",
+    actividadPadreId: "ACT-DANTE-1",
+    nombre: "Solicitar a Jorge Mejía apoyo para desarrollar una automatización",
+    descripcion: "Gestionar con Inteligencia de Negocios una automatización que acelere la prospección.",
+    responsableId: "U-DANTE",
+    areaResponsableId: "AR-VEN",
+    fechaInicio: "2025-11-10",
+    fechaFin: iso(addDays(HOY, 20)),
+    prioridad: "Alta",
+    ponderacion: 35,
+    indicador: "Automatización entregada",
+    meta: "1 automatización en producción",
+    evidenciaEsperada: "Flujo de automatización documentado.",
+    dependeDeActividadId: null,
+    comentariosTexto: "Actividad contenedora: su avance depende de la actividad que ejecuta Jorge Mejía (BI).",
+    requiereApoyoInterarea: true,
+    avance: 0,
+    estado: "En progreso",
+    creadoPorId: "U-DANTE",
+    fechaCreacion: iso(addDays(HOY, -250)),
+  });
+
+  // Actividad que ejecuta Jorge, nacida de la solicitud interárea aprobada.
+  nuevaActividad({
+    actividadId: "ACT-JORGE-1",
+    proyectoId: "PRY-VEN",
+    actividadPadreId: "SUB-4",
+    nombre: "Desarrollar automatización para prospección comercial",
+    descripcion: "Construir un flujo automatizado de calificación y priorización de prospectos para Ventas.",
+    responsableId: "U-JORGE",
+    areaResponsableId: "AR-BI",
+    fechaInicio: iso(addDays(HOY, -60)),
+    fechaFin: iso(addDays(HOY, 20)),
+    prioridad: "Alta",
+    ponderacion: 100,
+    indicador: "% de avance del flujo automatizado",
+    meta: "Automatización en producción",
+    evidenciaEsperada: "Documentación técnica y demo funcional.",
+    dependeDeActividadId: null,
+    comentariosTexto: "Actividad originada por solicitud interárea SOL-1 (Ventas → Inteligencia de Negocios).",
+    requiereApoyoInterarea: false,
+    avance: 45,
+    estado: "En progreso",
+    origenSolicitudId: "SOL-1",
+    creadoPorId: "U-DANIELA",
+    fechaCreacion: iso(addDays(HOY, -58)),
+  });
+
+  // -- Ventas: actividad de Lucía ---------------------------------------
+  nuevaActividad({
+    actividadId: "ACT-LUCIA-1",
+    proyectoId: "PRY-VEN",
+    actividadPadreId: null,
+    nombre: "Fidelizar cartera de clientes actuales",
+    descripcion: "Incrementar la recompra y venta cruzada en cuentas ya existentes.",
+    responsableId: "U-LUCIA",
+    areaResponsableId: "AR-VEN",
+    fechaInicio: "2025-10-01",
+    fechaFin: "2026-09-30",
+    prioridad: "Media",
+    ponderacion: 30,
+    indicador: "Cuentas con recompra",
+    meta: "25 cuentas",
+    evidenciaEsperada: "Reporte de recompra del CRM.",
+    dependeDeActividadId: null,
+    comentariosTexto: "",
+    requiereApoyoInterarea: false,
+    avance: 80,
+    estado: "En progreso",
+    creadoPorId: "U-DANIELA",
+    fechaCreacion: iso(addDays(HOY, -270)),
+  });
+
+  // -- Marketing ----------------------------------------------------------
+  nuevaActividad({
+    actividadId: "ACT-MKT-1",
+    proyectoId: "PRY-MKT",
+    actividadPadreId: null,
+    nombre: "Campaña digital de generación de leads",
+    descripcion: "Operar campañas de medios pagados y contenido para nutrir el funnel comercial.",
+    responsableId: "U-IVAN",
+    areaResponsableId: "AR-MKT",
+    fechaInicio: "2025-10-01",
+    fechaFin: "2026-09-30",
+    prioridad: "Alta",
+    ponderacion: 60,
+    indicador: "Leads calificados",
+    meta: "70 leads/mes",
+    evidenciaEsperada: "Reporte de campañas.",
+    dependeDeActividadId: null,
+    comentariosTexto: "",
+    requiereApoyoInterarea: false,
+    avance: 85,
+    estado: "En progreso",
+    creadoPorId: "U-RENATA",
+    fechaCreacion: iso(addDays(HOY, -265)),
+  });
+
+  nuevaActividad({
+    actividadId: "ACT-MKT-2",
+    proyectoId: "PRY-MKT",
+    actividadPadreId: null,
+    nombre: "Alianzas con partners comerciales",
+    descripcion: "Desarrollar acuerdos de co-marketing para ampliar el alcance comercial.",
+    responsableId: "U-RENATA",
+    areaResponsableId: "AR-MKT",
+    fechaInicio: "2025-10-01",
+    fechaFin: iso(addDays(HOY, 25)),
+    prioridad: "Media",
+    ponderacion: 40,
+    indicador: "Alianzas activas",
+    meta: "4 alianzas",
+    evidenciaEsperada: "Convenios firmados.",
+    dependeDeActividadId: null,
+    comentariosTexto: "",
+    requiereApoyoInterarea: true,
+    avance: 55,
+    estado: "En progreso",
+    creadoPorId: "U-RENATA",
+    fechaCreacion: iso(addDays(HOY, -260)),
+  });
+
+  // -- Operaciones ----------------------------------------------------------
+  nuevaActividad({
+    actividadId: "ACT-OPS-1",
+    proyectoId: "PRY-OPS",
+    actividadPadreId: null,
+    nombre: "Optimizar tiempos de entrega para soporte a ventas",
+    descripcion: "Reducir el tiempo de entrega promedio para no impactar el cierre comercial.",
+    responsableId: "U-PAOLA",
+    areaResponsableId: "AR-OPS",
+    fechaInicio: "2025-10-01",
+    fechaFin: iso(addDays(HOY, -35)),
+    prioridad: "Crítica",
+    ponderacion: 60,
+    indicador: "% SLA de entrega",
+    meta: "95% SLA",
+    evidenciaEsperada: "Reporte de logística.",
+    dependeDeActividadId: null,
+    comentariosTexto: "",
+    requiereApoyoInterarea: false,
+    avance: 25,
+    estado: "Bloqueada",
+    bloqueada: true,
+    motivoBloqueo: "Falta de personal en almacén regional para cumplir los tiempos comprometidos con Ventas.",
+    creadoPorId: "U-MARCO",
+    fechaCreacion: iso(addDays(HOY, -258)),
+  });
+
+  nuevaActividad({
+    actividadId: "ACT-OPS-2",
+    proyectoId: "PRY-OPS",
+    actividadPadreId: null,
+    nombre: "Actualizar SLA de atención a clientes VIP",
+    descripcion: "Redefinir acuerdos de servicio para cuentas estratégicas.",
+    responsableId: "U-MARCO",
+    areaResponsableId: "AR-OPS",
+    fechaInicio: "2025-10-01",
+    fechaFin: iso(addDays(HOY, 8)),
+    prioridad: "Alta",
+    ponderacion: 40,
+    indicador: "SLA documentado",
+    meta: "1 documento vigente",
+    evidenciaEsperada: "Documento de SLA aprobado.",
+    dependeDeActividadId: null,
+    comentariosTexto: "",
+    requiereApoyoInterarea: false,
+    avance: 70,
+    estado: "En progreso",
+    creadoPorId: "U-MARCO",
+    fechaCreacion: iso(addDays(HOY, -250)),
+  });
+
+  // -------------------------------------------------------------------
+  // EVIDENCIAS (simuladas)
+  // -------------------------------------------------------------------
+  const evidencias: Evidencia[] = [
+    {
+      evidenciaId: "EVI-1",
+      actividadId: "SUB-1",
+      nombreArchivo: "cartera_prospectos_oct2025.xlsx",
+      tipo: "Hoja de cálculo",
+      tamanioKB: 348,
+      fecha: iso(addDays(HOY, -180)),
+      comentario: "Base final de prospectos capturados en CRM.",
+      subidoPorId: "U-DANTE",
+      validada: true,
+    },
+    {
+      evidenciaId: "EVI-2",
+      actividadId: "ACT-JORGE-1",
+      nombreArchivo: "diagrama_flujo_automatizacion.pdf",
+      tipo: "Documento",
+      tamanioKB: 512,
+      fecha: iso(addDays(HOY, -20)),
+      comentario: "Diagrama del flujo de calificación automática de prospectos.",
+      subidoPorId: "U-JORGE",
+      validada: false,
+    },
+    {
+      evidenciaId: "EVI-3",
+      actividadId: "ACT-MKT-1",
+      nombreArchivo: "reporte_campanas_q3.pdf",
+      tipo: "Documento",
+      tamanioKB: 890,
+      fecha: iso(addDays(HOY, -12)),
+      comentario: "Resultados de campañas activas del trimestre.",
+      subidoPorId: "U-IVAN",
+      validada: true,
+    },
+  ];
+
+  // -------------------------------------------------------------------
+  // SOLICITUD INTERÁREA (ejemplo ya aprobado, base del caso obligatorio)
+  // -------------------------------------------------------------------
+  const solicitudes: SolicitudInterarea[] = [
+    {
+      solicitudId: "SOL-1",
+      objetivoId: "OBJ-001",
+      proyectoId: "PRY-VEN",
+      actividadOrigenId: "SUB-4",
+      solicitanteId: "U-DANTE",
+      areaSolicitanteId: "AR-VEN",
+      liderSolicitanteId: "U-DANIELA",
+      personaRequeridaId: "U-JORGE",
+      areaRequeridaId: "AR-BI",
+      liderAreaRequeridaId: "U-JORGE",
+      descripcionActividad: "Desarrollar una automatización que agilice la prospección comercial de Ventas.",
+      fechaInicio: iso(addDays(HOY, -60)),
+      fechaFin: iso(addDays(HOY, 20)),
+      prioridad: "Alta",
+      cargaEstimadaHrs: 40,
+      justificacion: "Sin una herramienta automatizada, Dante no puede sostener el ritmo de contacto diario requerido por la meta.",
+      dependencias: "Acceso a datos del CRM de Ventas.",
+      estatus: "Aceptada",
+      actividadCreadaId: "ACT-JORGE-1",
+      motivoRechazo: null,
+      fechaCreacion: iso(addDays(HOY, -62)),
+      fechaActualizacion: iso(addDays(HOY, -58)),
+    },
+    {
+      solicitudId: "SOL-2",
+      objetivoId: "OBJ-001",
+      proyectoId: "PRY-MKT",
+      actividadOrigenId: "ACT-MKT-2",
+      solicitanteId: "U-RENATA",
+      areaSolicitanteId: "AR-MKT",
+      liderSolicitanteId: "U-RENATA",
+      personaRequeridaId: "U-PAOLA",
+      areaRequeridaId: "AR-OPS",
+      liderAreaRequeridaId: "U-MARCO",
+      descripcionActividad: "Coordinar la logística de un evento de co-branding con un partner comercial.",
+      fechaInicio: iso(addDays(HOY, 5)),
+      fechaFin: iso(addDays(HOY, 30)),
+      prioridad: "Media",
+      cargaEstimadaHrs: 16,
+      justificacion: "Se requiere apoyo logístico especializado que Marketing no tiene internamente.",
+      dependencias: "Confirmación de sede por parte del partner.",
+      estatus: "Pendiente del líder del área requerida",
+      actividadCreadaId: null,
+      motivoRechazo: null,
+      fechaCreacion: iso(addDays(HOY, -3)),
+      fechaActualizacion: iso(addDays(HOY, -3)),
+    },
+  ];
+
+  const aprobaciones: Aprobacion[] = [
+    {
+      aprobacionId: "APR-1",
+      solicitudId: "SOL-1",
+      aprobadorId: "U-DANIELA",
+      rolAprobador: "Líder solicitante",
+      decision: "Aceptada",
+      comentario: "Aprobado, es prioritario para cerrar el trimestre.",
+      fecha: iso(addDays(HOY, -60)),
+    },
+    {
+      aprobacionId: "APR-2",
+      solicitudId: "SOL-1",
+      aprobadorId: "U-JORGE",
+      rolAprobador: "Líder área requerida",
+      decision: "Aceptada",
+      comentario: "Con gusto, lo integramos al sprint de BI de este mes.",
+      fecha: iso(addDays(HOY, -58)),
+    },
+    {
+      aprobacionId: "APR-3",
+      solicitudId: "SOL-2",
+      aprobadorId: "U-RENATA",
+      rolAprobador: "Líder solicitante",
+      decision: "Aceptada",
+      comentario: "Confirmado desde Marketing, en espera de Operaciones.",
+      fecha: iso(addDays(HOY, -3)),
+    },
+  ];
+
+  // -------------------------------------------------------------------
+  // COMENTARIOS
+  // -------------------------------------------------------------------
+  const comentarios = [
+    {
+      comentarioId: "COM-1",
+      entidadTipo: "Actividad" as const,
+      entidadId: "SUB-3",
+      autorId: "U-DANTE",
+      texto: "Sigo esperando la aprobación de presupuesto para la herramienta de prospección.",
+      fecha: iso(addDays(HOY, -9)),
+    },
+    {
+      comentarioId: "COM-2",
+      entidadTipo: "Actividad" as const,
+      entidadId: "ACT-OPS-1",
+      autorId: "U-PAOLA",
+      texto: "Seguimos sin cubrir las vacantes de almacén; esto está deteniendo los tiempos de entrega.",
+      fecha: iso(addDays(HOY, -30)),
+    },
+    {
+      comentarioId: "COM-3",
+      entidadTipo: "Actividad" as const,
+      entidadId: "ACT-JORGE-1",
+      autorId: "U-JORGE",
+      texto: "Ya está lista la primera versión del flujo, entra a pruebas con Ventas la próxima semana.",
+      fecha: iso(addDays(HOY, -5)),
+    },
+  ];
+
+  // -------------------------------------------------------------------
+  // NOTIFICACIONES
+  // -------------------------------------------------------------------
+  const notificaciones: Notificacion[] = [
+    {
+      notificacionId: "NOT-1",
+      usuarioId: "U-DANTE",
+      tipo: "Solicitud aprobada",
+      titulo: "Jorge Mejía aceptó tu solicitud de apoyo",
+      mensaje: "La automatización de prospección fue aceptada por Inteligencia de Negocios y ya está en progreso.",
+      entidadTipo: "Solicitud",
+      entidadId: "SOL-1",
+      leida: true,
+      fecha: iso(addDays(HOY, -58)),
+    },
+    {
+      notificacionId: "NOT-2",
+      usuarioId: "U-JORGE",
+      tipo: "Nueva actividad asignada",
+      titulo: "Nueva actividad: Desarrollar automatización para prospección comercial",
+      mensaje: "Daniela Juárez (Ventas) te asignó una actividad derivada de una solicitud interárea aprobada.",
+      entidadTipo: "Actividad",
+      entidadId: "ACT-JORGE-1",
+      leida: true,
+      fecha: iso(addDays(HOY, -58)),
+    },
+    {
+      notificacionId: "NOT-3",
+      usuarioId: "U-DANIELA",
+      tipo: "Bloqueo reportado",
+      titulo: "Dante reportó un bloqueo",
+      mensaje: "\"Solicitar un agente o mecanismo de prospección\" está bloqueada por presupuesto pendiente.",
+      entidadTipo: "Actividad",
+      entidadId: "SUB-3",
+      leida: false,
+      fecha: iso(addDays(HOY, -9)),
+    },
+    {
+      notificacionId: "NOT-4",
+      usuarioId: "U-DANIELA",
+      tipo: "Actividad próxima a vencer",
+      titulo: "Contactar 50 personas diariamente está por vencer",
+      mensaje: "La actividad de Dante vence pronto y su avance es 70%.",
+      entidadTipo: "Actividad",
+      entidadId: "SUB-2",
+      leida: false,
+      fecha: iso(addDays(HOY, -1)),
+    },
+    {
+      notificacionId: "NOT-5",
+      usuarioId: "U-GABRIEL",
+      tipo: "Bloqueo reportado",
+      titulo: "Actividad crítica bloqueada en Operaciones",
+      mensaje: "\"Optimizar tiempos de entrega para soporte a ventas\" sigue bloqueada y ya está vencida.",
+      entidadTipo: "Actividad",
+      entidadId: "ACT-OPS-1",
+      leida: false,
+      fecha: iso(addDays(HOY, -30)),
+    },
+    {
+      notificacionId: "NOT-6",
+      usuarioId: "U-MARCO",
+      tipo: "Solicitud interárea recibida",
+      titulo: "Renata Solís solicita apoyo de Paola Núñez",
+      mensaje: "Marketing solicita apoyo logístico de tu equipo para un evento de co-branding.",
+      entidadTipo: "Solicitud",
+      entidadId: "SOL-2",
+      leida: false,
+      fecha: iso(addDays(HOY, -3)),
+    },
+    {
+      notificacionId: "NOT-7",
+      usuarioId: "U-RENATA",
+      tipo: "Avance sin actualizar",
+      titulo: "Alianzas con partners comerciales no se actualiza hace varios días",
+      mensaje: "Actualiza el avance para mantener informado a Dirección.",
+      entidadTipo: "Actividad",
+      entidadId: "ACT-MKT-2",
+      leida: false,
+      fecha: iso(addDays(HOY, -2)),
+    },
+  ];
+
+  // -------------------------------------------------------------------
+  // BITÁCORA
+  // -------------------------------------------------------------------
+  const bitacora: Bitacora[] = [
+    { bitacoraId: "BIT-1", usuarioId: "U-GABRIEL", accion: "Creó el objetivo estratégico", entidadTipo: "Objetivo", entidadId: "OBJ-001", detalle: "Aumentar 30% las ventas — Ventas 50%, Marketing 30%, Operaciones 20%.", fecha: iso(addDays(HOY, -300)) },
+    { bitacoraId: "BIT-2", usuarioId: "U-DANIELA", accion: "Creó el proyecto de área", entidadTipo: "Proyecto", entidadId: "PRY-VEN", detalle: "Plan Comercial 2025-2026.", fecha: iso(addDays(HOY, -280)) },
+    { bitacoraId: "BIT-3", usuarioId: "U-RENATA", accion: "Creó el proyecto de área", entidadTipo: "Proyecto", entidadId: "PRY-MKT", detalle: "Plan de Generación de Demanda.", fecha: iso(addDays(HOY, -270)) },
+    { bitacoraId: "BIT-4", usuarioId: "U-MARCO", accion: "Creó el proyecto de área", entidadTipo: "Proyecto", entidadId: "PRY-OPS", detalle: "Plan de Capacidad Operativa.", fecha: iso(addDays(HOY, -260)) },
+    { bitacoraId: "BIT-5", usuarioId: "U-DANIELA", accion: "Asignó actividad", entidadTipo: "Actividad", entidadId: "ACT-DANTE-1", detalle: "Asignada a Dante Osorio.", fecha: iso(addDays(HOY, -270)) },
+    { bitacoraId: "BIT-6", usuarioId: "U-DANTE", accion: "Creó subactividades", entidadTipo: "Actividad", entidadId: "ACT-DANTE-1", detalle: "4 subactividades creadas.", fecha: iso(addDays(HOY, -260)) },
+    { bitacoraId: "BIT-7", usuarioId: "U-DANTE", accion: "Creó solicitud interárea", entidadTipo: "Solicitud", entidadId: "SOL-1", detalle: "Solicitó apoyo de Jorge Mejía (BI).", fecha: iso(addDays(HOY, -62)) },
+    { bitacoraId: "BIT-8", usuarioId: "U-DANIELA", accion: "Aprobó solicitud (líder solicitante)", entidadTipo: "Solicitud", entidadId: "SOL-1", detalle: "Aprobado, es prioritario para cerrar el trimestre.", fecha: iso(addDays(HOY, -60)) },
+    { bitacoraId: "BIT-9", usuarioId: "U-JORGE", accion: "Aprobó solicitud (líder área requerida)", entidadTipo: "Solicitud", entidadId: "SOL-1", detalle: "Actividad creada y asignada a Jorge Mejía.", fecha: iso(addDays(HOY, -58)) },
+    { bitacoraId: "BIT-10", usuarioId: "U-JORGE", accion: "Actualizó avance", entidadTipo: "Actividad", entidadId: "ACT-JORGE-1", detalle: "Avance actualizado a 45%.", fecha: iso(addDays(HOY, -5)) },
+    { bitacoraId: "BIT-11", usuarioId: "U-PAOLA", accion: "Reportó bloqueo", entidadTipo: "Actividad", entidadId: "ACT-OPS-1", detalle: "Falta de personal en almacén regional.", fecha: iso(addDays(HOY, -30)) },
+    { bitacoraId: "BIT-12", usuarioId: "U-RENATA", accion: "Creó solicitud interárea", entidadTipo: "Solicitud", entidadId: "SOL-2", detalle: "Solicitó apoyo de Paola Núñez (Operaciones).", fecha: iso(addDays(HOY, -3)) },
+  ];
+
+  const configuracionEdd: ConfiguracionEDD = {
+    cicloActivo: "EDD 2025-2026",
+    fechaAperturaCiclo: "2026-10-01",
+    fechaCierreCiclo: "2026-11-15",
+    topePonderacionPorEmpleado: 100,
+    reglas: [
+      "Los proyectos y actividades activos del periodo aparecerán automáticamente en la Evaluación de Desempeño (EDD) del ciclo siguiente.",
+      "La suma de ponderaciones EDD de los proyectos evaluables por empleado no debe superar 100%.",
+      "El avance final calculado por el portal será una calificación sugerida para el ciclo de EDD.",
+      "El líder podrá confirmar la calificación sugerida o modificarla, justificando la diferencia.",
+      "Las evidencias registradas en el portal deben estar disponibles para el evaluador durante el ciclo de EDD.",
+      "Esta versión no realiza ninguna conexión externa: la vista de Compatibilidad EDD es una simulación local de cómo se transferiría la información.",
+    ],
+  };
+
+  return {
+    version: DB_VERSION,
+    usuarios,
+    areas,
+    periodos,
+    objetivos,
+    objetivoAreas,
+    proyectos,
+    actividades,
+    dependencias: [],
+    evidencias,
+    solicitudes,
+    aprobaciones,
+    comentarios,
+    notificaciones,
+    bitacora,
+    configuracionEdd,
+  };
+}
