@@ -19,6 +19,39 @@ export interface Usuario {
   activo: boolean;
   personasACargo: string[]; // usuarioId[]
   permisos: string[];
+  esSuperUsuario?: boolean;
+}
+
+export type TipoNodoCascada = "Objetivo" | "Proyecto" | "Actividad";
+export type EstatusNodoCascada = "Borrador" | "Pendiente Dirección" | "Cambios solicitados" | "Aprobado" | "En ejecución" | "Cumplido" | "Rechazado";
+
+/** Unidad universal de despliegue. La relación padreId permite tantos niveles
+ * organizacionales como existan; la capacidad de asignar nace de tener
+ * reportes directos, no de un rol rígido. */
+export interface NodoCascada {
+  nodoId: string;
+  padreId: string | null;
+  raizId: string;
+  tipo: TipoNodoCascada;
+  titulo: string;
+  descripcion: string;
+  indicador: string;
+  lineaBase: number;
+  meta: number;
+  unidad: string;
+  fechaInicio: string;
+  fechaFin: string;
+  ponderacion: number;
+  avance: number;
+  responsableId: string;
+  asignadoPorId: string;
+  creadoPorId: string;
+  estatus: EstatusNodoCascada;
+  nivel: number;
+  comentarioAprobacion: string;
+  aprobadoPorId: string | null;
+  fechaAprobacion: string | null;
+  fechaCreacion: string;
 }
 
 export interface Area {
@@ -304,6 +337,7 @@ export interface DemoDatabase {
   areas: Area[];
   periodos: Periodo[];
   objetivos: Objetivo[];
+  nodosCascada: NodoCascada[];
   objetivoAreas: ObjetivoArea[];
   proyectos: Proyecto[];
   actividades: Actividad[];

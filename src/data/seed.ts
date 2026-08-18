@@ -8,6 +8,7 @@ import type {
   Notificacion,
   Objetivo,
   ObjetivoArea,
+  NodoCascada,
   Periodo,
   Proyecto,
   SolicitudInterarea,
@@ -16,7 +17,7 @@ import type {
   EddCampos,
 } from "../types";
 
-export const DB_VERSION = 4;
+export const DB_VERSION = 5;
 
 // ---------------------------------------------------------------------------
 // Utilidades de fecha (relativas al momento en que se genera la demo, para
@@ -63,6 +64,10 @@ export function buildSeedDatabase(): DemoDatabase {
     { areaId: "AR-VEN", nombre: "Ventas", descripcion: "Prospección, cierre y relación comercial.", colorHex: "#1f8f4e", liderId: "U-DANIELA" },
     { areaId: "AR-MKT", nombre: "Marketing", descripcion: "Generación de demanda y posicionamiento.", colorHex: "#e08a1e", liderId: "U-RENATA" },
     { areaId: "AR-OPS", nombre: "Operaciones", descripcion: "Entrega, logística y soporte a ventas.", colorHex: "#c0392b", liderId: "U-MARCO" },
+    { areaId: "AR-FIN", nombre: "Finanzas", descripcion: "Planeación financiera y continuidad del negocio.", colorHex: "#176b87", liderId: "U-ARMANDO" },
+    { areaId: "AR-CON", nombre: "Contraloría", descripcion: "Control financiero y cumplimiento.", colorHex: "#287d8e", liderId: "U-FERNANDO" },
+    { areaId: "AR-CONT", nombre: "Contabilidad", descripcion: "Registro y cierre contable.", colorHex: "#3b8f9f", liderId: "U-SOFIA" },
+    { areaId: "AR-TES", nombre: "Tesorería", descripcion: "Liquidez y flujo de efectivo.", colorHex: "#4ba1af", liderId: "U-RAUL" },
   ];
 
   // -------------------------------------------------------------------
@@ -83,6 +88,7 @@ export function buildSeedDatabase(): DemoDatabase {
       activo: true,
       personasACargo: [],
       permisos: ["administrar_usuarios", "configurar_catalogos", "ver_todo", "restablecer_demo", "ver_bitacora", "aprobar_area_bi"],
+      esSuperUsuario: true,
     },
     {
       usuarioId: "U-GABRIEL",
@@ -96,8 +102,9 @@ export function buildSeedDatabase(): DemoDatabase {
       liderId: null,
       nombreLider: null,
       activo: true,
-      personasACargo: ["U-DANIELA", "U-RENATA", "U-MARCO", "U-JORGE"],
+      personasACargo: ["U-DANIELA", "U-RENATA", "U-MARCO", "U-JORGE", "U-ARMANDO", "U-DIANA"],
       permisos: ["crear_objetivos", "asignar_areas", "ver_dashboard_ejecutivo", "ver_cascada_completa"],
+      esSuperUsuario: false,
     },
     {
       usuarioId: "U-DANIELA",
@@ -204,6 +211,13 @@ export function buildSeedDatabase(): DemoDatabase {
       personasACargo: [],
       permisos: ["actualizar_avance", "crear_subactividades", "solicitar_apoyo"],
     },
+    { usuarioId: "U-ARMANDO", empleadoId: "EMP-010", nombre: "Armando Ramírez", correo: "armando@demo.com", passwordDemo: "1234", rol: "Lider", areaId: "AR-FIN", puesto: "Director de Finanzas / Super Usuario", liderId: "U-GABRIEL", nombreLider: "Gabriel Rosales", activo: true, personasACargo: ["U-FERNANDO", "U-SOFIA", "U-RAUL"], permisos: ["proponer_objetivos_corporativos", "asignar_objetivos", "ver_cascada_completa"], esSuperUsuario: true },
+    { usuarioId: "U-DIANA", empleadoId: "EMP-011", nombre: "Diana Hernández", correo: "diana@demo.com", passwordDemo: "1234", rol: "Administrador", areaId: "AR-DG", puesto: "Super Usuario de Dirección", liderId: "U-GABRIEL", nombreLider: "Gabriel Rosales", activo: true, personasACargo: [], permisos: ["proponer_objetivos_corporativos", "ver_cascada_completa"], esSuperUsuario: true },
+    { usuarioId: "U-FERNANDO", empleadoId: "EMP-012", nombre: "Fernando Ruiz", correo: "fernando@demo.com", passwordDemo: "1234", rol: "Lider", areaId: "AR-CON", puesto: "Contralor", liderId: "U-ARMANDO", nombreLider: "Armando Ramírez", activo: true, personasACargo: ["U-ELENA"], permisos: ["asignar_objetivos", "validar_avances"] },
+    { usuarioId: "U-ELENA", empleadoId: "EMP-013", nombre: "Elena Cruz", correo: "elena@demo.com", passwordDemo: "1234", rol: "Colaborador", areaId: "AR-CON", puesto: "Supervisora de Control", liderId: "U-FERNANDO", nombreLider: "Fernando Ruiz", activo: true, personasACargo: ["U-MATEO"], permisos: ["asignar_objetivos", "validar_avances"] },
+    { usuarioId: "U-MATEO", empleadoId: "EMP-014", nombre: "Mateo León", correo: "mateo@demo.com", passwordDemo: "1234", rol: "Colaborador", areaId: "AR-CON", puesto: "Analista de Control", liderId: "U-ELENA", nombreLider: "Elena Cruz", activo: true, personasACargo: [], permisos: ["actualizar_avance"] },
+    { usuarioId: "U-SOFIA", empleadoId: "EMP-015", nombre: "Sofía Vargas", correo: "sofia@demo.com", passwordDemo: "1234", rol: "Lider", areaId: "AR-CONT", puesto: "Jefa de Contabilidad", liderId: "U-ARMANDO", nombreLider: "Armando Ramírez", activo: true, personasACargo: [], permisos: ["actualizar_avance"] },
+    { usuarioId: "U-RAUL", empleadoId: "EMP-016", nombre: "Raúl Medina", correo: "raul@demo.com", passwordDemo: "1234", rol: "Lider", areaId: "AR-TES", puesto: "Jefe de Tesorería", liderId: "U-ARMANDO", nombreLider: "Armando Ramírez", activo: true, personasACargo: [], permisos: ["actualizar_avance"] },
   ];
 
   // -------------------------------------------------------------------
@@ -889,12 +903,23 @@ export function buildSeedDatabase(): DemoDatabase {
     ],
   };
 
+  // Cascada V2: demuestra que un colaborador con reportes directos también
+  // puede delegar al siguiente nivel, sin depender de una etiqueta de rol.
+  const nodosCascada: NodoCascada[] = [
+    { nodoId: "NC-CASH", padreId: null, raizId: "NC-CASH", tipo: "Objetivo", titulo: "Cashflow saludable", descripcion: "Asegurar liquidez suficiente para la continuidad del negocio.", indicador: "Días de caja disponibles", lineaBase: 42, meta: 60, unidad: "días", fechaInicio: "2026-01-01", fechaFin: "2026-12-31", ponderacion: 30, avance: 64, responsableId: "U-ARMANDO", asignadoPorId: "U-GABRIEL", creadoPorId: "U-GABRIEL", estatus: "En ejecución", nivel: 0, comentarioAprobacion: "Prioridad corporativa aprobada.", aprobadoPorId: "U-GABRIEL", fechaAprobacion: iso(addDays(HOY, -90)), fechaCreacion: iso(addDays(HOY, -100)) },
+    { nodoId: "NC-CONTROL", padreId: "NC-CASH", raizId: "NC-CASH", tipo: "Objetivo", titulo: "Reducir desviaciones presupuestales", descripcion: "Control mensual de desviaciones por unidad.", indicador: "Desviación presupuestal", lineaBase: 12, meta: 5, unidad: "%", fechaInicio: "2026-01-15", fechaFin: "2026-11-30", ponderacion: 40, avance: 58, responsableId: "U-FERNANDO", asignadoPorId: "U-ARMANDO", creadoPorId: "U-ARMANDO", estatus: "En ejecución", nivel: 1, comentarioAprobacion: "", aprobadoPorId: "U-ARMANDO", fechaAprobacion: iso(addDays(HOY, -80)), fechaCreacion: iso(addDays(HOY, -82)) },
+    { nodoId: "NC-CIERRE", padreId: "NC-CONTROL", raizId: "NC-CASH", tipo: "Proyecto", titulo: "Tablero de cierre y variaciones", descripcion: "Automatizar el seguimiento semanal de variaciones.", indicador: "Cobertura de unidades", lineaBase: 30, meta: 100, unidad: "%", fechaInicio: "2026-02-01", fechaFin: "2026-10-31", ponderacion: 100, avance: 58, responsableId: "U-ELENA", asignadoPorId: "U-FERNANDO", creadoPorId: "U-FERNANDO", estatus: "En ejecución", nivel: 2, comentarioAprobacion: "", aprobadoPorId: "U-FERNANDO", fechaAprobacion: iso(addDays(HOY, -70)), fechaCreacion: iso(addDays(HOY, -72)) },
+    { nodoId: "NC-CONCILIA", padreId: "NC-CIERRE", raizId: "NC-CASH", tipo: "Actividad", titulo: "Conciliar fuentes de información", descripcion: "Validar integridad de datos antes de automatizar.", indicador: "Fuentes conciliadas", lineaBase: 2, meta: 8, unidad: "fuentes", fechaInicio: "2026-03-01", fechaFin: "2026-09-30", ponderacion: 100, avance: 58, responsableId: "U-MATEO", asignadoPorId: "U-ELENA", creadoPorId: "U-ELENA", estatus: "En ejecución", nivel: 3, comentarioAprobacion: "", aprobadoPorId: "U-ELENA", fechaAprobacion: iso(addDays(HOY, -60)), fechaCreacion: iso(addDays(HOY, -61)) },
+    { nodoId: "NC-PROCESOS", padreId: null, raizId: "NC-PROCESOS", tipo: "Objetivo", titulo: "Procesos al 100", descripcion: "Poner al 100 los procesos críticos de toda la empresa.", indicador: "Procesos estandarizados", lineaBase: 90, meta: 100, unidad: "%", fechaInicio: "2026-01-01", fechaFin: "2026-12-31", ponderacion: 25, avance: 0, responsableId: "U-GABRIEL", asignadoPorId: "U-DIANA", creadoPorId: "U-DIANA", estatus: "Pendiente Dirección", nivel: 0, comentarioAprobacion: "", aprobadoPorId: null, fechaAprobacion: null, fechaCreacion: iso(addDays(HOY, -2)) },
+  ];
+
   return {
     version: DB_VERSION,
     usuarios,
     areas,
     periodos,
     objetivos,
+    nodosCascada,
     objetivoAreas,
     proyectos,
     actividades,

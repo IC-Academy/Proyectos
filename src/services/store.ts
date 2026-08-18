@@ -7,6 +7,7 @@ import type {
   EstatusSolicitud,
   Evidencia,
   Notificacion,
+  NodoCascada,
   Objetivo,
   ObjetivoArea,
   Periodo,
@@ -65,6 +66,7 @@ class DemoStore {
     const draft: DemoDatabase = deepClone(this.db);
     mutator(draft);
     recalcularAvancesActividades(draft.actividades);
+    recalcularCascada(draft.nodosCascada);
     sincronizarAlertas(draft);
     this.db = draft;
     persistDatabase(draft);
@@ -142,6 +144,62 @@ class DemoStore {
       if (!obj) return;
       Object.assign(obj, patch);
       this.log(usuarioId, "Editó el objetivo", "Objetivo", objetivoId, obj.nombreCorto, draft);
+    });
+  }
+
+  // =========================================================================
+  // CASCADA ORGANIZACIONAL V2
+  // =========================================================================
+  proponerObjetivoCorporativo(input: Omit<NodoCascada, "nodoId" | "padreId" | "raizId" | "tipo" | "nivel" | "avance" | "asignadoPorId" | "creadoPorId" | "estatus" | "comentarioAprobacion" | "aprobadoPorId" | "fechaAprobacion" | "fechaCreacion">, creadoPorId: string): string {
+    const nodoId = genId("NC");
+    this.update((draft) => {
+      const creador = draft.usuarios.find((u) => u.usuarioId === creadoPorId);
+      if (!creador || (creador.rol !== "Direccion" && !creador.esSuperUsuario)) return;
+      const aprobado = creador.rol === "Direccion";
+      draft.nodosCascada.push({ ...input, nodoId, padreId: null, raizId: nodoId, tipo: "Objetivo", nivel: 0, avance: 0, asignadoPorId: creadoPorId, creadoPorId, estatus: aprobado ? "Aprobado" : "Pendiente Dirección", comentarioAprobacion: "", aprobadoPorId: aprobado ? creadoPorId : null, fechaAprobacion: aprobado ? hoyIso() : null, fechaCreacion: hoyIso() });
+      draft.usuarios.filter((u) => u.rol === "Direccion").forEach((u) => this.notificar(draft, u.usuarioId, "Objetivo asignado", "Objetivo corporativo pendiente", `${creador.nombre} envió “${input.titulo}” para aprobación de Dirección.`, "Objetivo", nodoId));
+      this.log(creadoPorId, aprobado ? "Creó objetivo corporativo" : "Envió objetivo a Dirección", "Objetivo", nodoId, input.titulo, draft);
+    });
+    return nodoId;
+  }
+
+  decidirObjetivoCorporativo(nodoId: string, decision: "Aprobado" | "Cambios solicitados" | "Rechazado", comentario: string, usuarioId: string) {
+    this.update((draft) => {
+      const usuario = draft.usuarios.find((u) => u.usuarioId === usuarioId);
+      const nodo = draft.nodosCascada.find((n) => n.nodoId === nodoId && n.padreId === null);
+      if (!usuario || usuario.rol !== "Direccion" || !nodo) return;
+      nodo.estatus = decision;
+      nodo.comentarioAprobacion = comentario;
+      nodo.aprobadoPorId = decision === "Aprobado" ? usuarioId : null;
+      nodo.fechaAprobacion = decision === "Aprobado" ? hoyIso() : null;
+      this.notificar(draft, nodo.creadoPorId, decision === "Aprobado" ? "Solicitud aprobada" : "Cambios solicitados", `Dirección: ${decision}`, `${nodo.titulo}. ${comentario}`, "Objetivo", nodoId);
+      this.log(usuarioId, `${decision} objetivo corporativo`, "Objetivo", nodoId, comentario || nodo.titulo, draft);
+    });
+  }
+
+  asignarNodoCascada(padreId: string, input: Pick<NodoCascada, "tipo" | "titulo" | "descripcion" | "indicador" | "lineaBase" | "meta" | "unidad" | "fechaInicio" | "fechaFin" | "ponderacion" | "responsableId">, asignadoPorId: string): string | null {
+    const nodoId = genId("NC");
+    let creado = false;
+    this.update((draft) => {
+      const padre = draft.nodosCascada.find((n) => n.nodoId === padreId);
+      const responsable = draft.usuarios.find((u) => u.usuarioId === input.responsableId);
+      const esReporteDirecto = responsable?.liderId === asignadoPorId;
+      if (!padre || !responsable || !esReporteDirecto || padre.estatus === "Pendiente Dirección" || padre.estatus === "Rechazado") return;
+      draft.nodosCascada.push({ ...input, nodoId, padreId, raizId: padre.raizId, nivel: padre.nivel + 1, avance: 0, asignadoPorId, creadoPorId: asignadoPorId, estatus: "En ejecución", comentarioAprobacion: "", aprobadoPorId: asignadoPorId, fechaAprobacion: hoyIso(), fechaCreacion: hoyIso() });
+      this.notificar(draft, input.responsableId, "Objetivo asignado", `Nuevo ${input.tipo.toLowerCase()}: ${input.titulo}`, "Tu responsable directo te asignó este compromiso dentro de la cascada.", input.tipo, nodoId);
+      this.log(asignadoPorId, `Asignó ${input.tipo.toLowerCase()} a reporte directo`, input.tipo, nodoId, input.titulo, draft);
+      creado = true;
+    });
+    return creado ? nodoId : null;
+  }
+
+  actualizarAvanceNodo(nodoId: string, avance: number, usuarioId: string) {
+    this.update((draft) => {
+      const nodo = draft.nodosCascada.find((n) => n.nodoId === nodoId);
+      if (!nodo || nodo.responsableId !== usuarioId || draft.nodosCascada.some((n) => n.padreId === nodoId)) return;
+      nodo.avance = Math.max(0, Math.min(100, Math.round(avance)));
+      nodo.estatus = nodo.avance === 100 ? "Cumplido" : "En ejecución";
+      this.log(usuarioId, "Actualizó avance de cascada", nodo.tipo, nodoId, `${nodo.avance}%`, draft);
     });
   }
 
@@ -631,6 +689,22 @@ function sincronizarAlertas(draft: DemoDatabase) {
         agregar(a.responsableId, "Avance sin actualizar", `Actualiza: ${a.nombre}`, `No has actualizado el avance en ${diasSinActualizar} días.`, "Actividad", a.actividadId);
       }
     });
+}
+
+function recalcularCascada(nodos: NodoCascada[]) {
+  const visitar = (padreId: string, vistos: Set<string>): number => {
+    if (vistos.has(padreId)) return 0;
+    vistos.add(padreId);
+    const padre = nodos.find((n) => n.nodoId === padreId);
+    const hijos = nodos.filter((n) => n.padreId === padreId && n.estatus !== "Rechazado");
+    if (!padre || hijos.length === 0) return padre?.avance ?? 0;
+    const totalPeso = hijos.reduce((s, h) => s + Math.max(0, h.ponderacion), 0);
+    const avance = hijos.reduce((s, h) => s + visitar(h.nodoId, vistos) * (totalPeso > 0 ? h.ponderacion / totalPeso : 1 / hijos.length), 0);
+    padre.avance = Math.round(avance);
+    if (padre.avance === 100) padre.estatus = "Cumplido";
+    return padre.avance;
+  };
+  nodos.filter((n) => n.padreId === null).forEach((n) => visitar(n.nodoId, new Set()));
 }
 
 function deepClone<T>(value: T): T {

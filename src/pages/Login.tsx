@@ -6,6 +6,8 @@ const CUENTAS_DEMO = [
   { correo: "daniela@demo.com", rol: "Líder", area: "Ventas" },
   { correo: "dante@demo.com", rol: "Colaborador", area: "Ventas" },
   { correo: "jorge@demo.com", rol: "Administrador", area: "Inteligencia de Negocios" },
+  { correo: "armando@demo.com", rol: "Super Usuario", area: "Finanzas" },
+  { correo: "diana@demo.com", rol: "Super Usuario", area: "Dirección General" },
 ];
 
 export function Login() {

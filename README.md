@@ -1,4 +1,3 @@
-<<<<<<< Updated upstream
 # Portal Corporativo de Objetivos en Cascada — INTER-CON
 
 Demo funcional local (sin backend) de un portal que transforma un objetivo estratégico
@@ -13,6 +12,29 @@ cumplimiento de un objetivo.
 > **Integración EDD**, pero no se conectan a nada real.
 
 ## Cascada implementada
+
+### Arquitectura organizacional V2
+
+La pantalla **Despliegue jerárquico** agrega el modelo acordado para la primera
+demo con Dirección:
+
+- Dirección puede crear objetivos corporativos y quedan aprobados de origen.
+- Armando, Diana y Jorge son **Super Usuarios**: pueden suplir la captura de
+  Dirección, pero sus propuestas quedan bloqueadas hasta la aprobación del
+  Director.
+- Después de la aprobación, el responsable despliega objetivos, proyectos o
+  actividades únicamente a sus reportes directos.
+- La capacidad de asignar se deriva de `liderId`/`personasACargo`, no del nombre
+  del rol. Por eso un supervisor registrado como colaborador puede recibir un
+  compromiso y volver a desplegarlo a su propio equipo.
+- La estructura es recursiva y no tiene profundidad fija. El avance se captura
+  solamente en hojas y se consolida hacia arriba con la ponderación de los hijos.
+- Dirección aprueba el objetivo corporativo; cada jefe inmediato gobierna el
+  despliegue y la validación de su tramo, evitando una bandeja central saturada.
+
+Caso precargado: **Cashflow saludable → Contraloría → Supervisión de Control →
+Analista**, más la propuesta **Procesos al 100** enviada por Diana y pendiente de
+Dirección.
 
 ```
 Objetivo estratégico (Dirección)
@@ -37,6 +59,11 @@ siempre de abajo hacia arriba usando las ponderaciones capturadas en cada nivel
 | `daniela@demo.com` | Líder | Ventas |
 | `dante@demo.com` | Colaborador | Ventas |
 | `jorge@demo.com` | Administrador | Inteligencia de Negocios |
+| `armando@demo.com` | Líder / Super Usuario | Finanzas |
+| `diana@demo.com` | Administrador / Super Usuario | Dirección General |
+| `fernando@demo.com` | Líder | Contraloría |
+| `elena@demo.com` | Supervisora con personal a cargo | Contraloría |
+| `mateo@demo.com` | Colaborador final | Contraloría |
 | `lucia@demo.com` | Colaborador | Ventas |
 | `renata@demo.com` | Líder | Marketing |
 | `ivan@demo.com` | Colaborador | Marketing |
@@ -266,29 +293,3 @@ npx playwright show-report
   usar y sin advertencias de `react/only-export-components` (los archivos que
   mezclaban componentes con helpers/contexto se separaron en
   `src/context/`, `src/utils/` y `src/components/menus.ts`).
-=======
-# EDD Inter-Con — Rev. 4 · Ponderación 40/30/30
-
-Versión de frontend alineada al documento oficial `EDD_Inter-Con_Rev4_ponderacion_40_60.docx` (FOR-CAP-003 Rev. 4).
-
-## Reglas funcionales aplicadas
-
-- Valores y Actitud: **40%** (5 reactivos de 8%).
-- Conocimientos y Habilidades Técnicas del Puesto: **30%** (5 reactivos de 6%).
-- Cumplimiento de Objetivos: **30%**.
-- Escala 1–5 + N/A; N/A se excluye del promedio.
-- Si más de la mitad de una sección está en N/A se exige justificación en comentarios antes del envío.
-- Objetivos: hasta 5 con objetivo, meta/indicador, resultado, % de cumplimiento y calificación.
-- Equivalencia Rev.4: >=110%=5, 100–109%=4, 90–99%=3, 75–89%=2, <75%=1.
-- Eje ACTITUD = promedio A × 20.
-- Eje DESEMPEÑO = Técnica Funcional + Objetivos, convertido a base 100.
-- Niveles 9-box: <60 Bajo; 60–79 Medio; 80–100 Alto.
-
-## Importante
-
-SMART/IA permanece en el código solo como compatibilidad futura, pero **no forma parte del flujo visible Rev.4**. El login OTP actual también se conserva sin cambios; la migración a Microsoft Entra ID/SAML se realizará en una fase separada cuando HTTPS y la configuración del IdP estén listos.
-
-## Modo demo / API
-
-La aplicación conserva la arquitectura existente (`APP_CONFIG.mode`). No se agregan secretos al frontend.
->>>>>>> Stashed changes

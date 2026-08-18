@@ -21,7 +21,8 @@ export function Layout({
 }) {
   const { usuarioActual, logout, db } = useApp();
   if (!usuarioActual) return null;
-  const menu = MENUS[usuarioActual.rol] ?? [];
+  const menuBase = MENUS[usuarioActual.rol] ?? [];
+  const menu = [{ key: "cascada-organizacional", label: "Despliegue jerárquico", icon: "🧭" }, ...menuBase];
   const areaNombre = db.areas.find((a) => a.areaId === usuarioActual.areaId)?.nombre ?? "";
 
   return (

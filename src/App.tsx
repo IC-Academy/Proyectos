@@ -8,6 +8,7 @@ import { ResumenEjecutivo, ObjetivosEstrategicos, CascadaPage, GanttPage, Alerta
 import { MisObjetivosLider, ProyectosDelArea, MiEquipo, ActividadesLider, SolicitudesLider, AprobacionesLider, GanttLider } from "./pages/lider/LiderPages";
 import { MiResumenColaborador, MisObjetivosColaborador, MisActividadesColaborador, MiPlanColaborador, EvidenciasColaborador, SolicitudesColaborador } from "./pages/colaborador/ColaboradorPages";
 import { ResumenAdmin, UsuariosAdmin, AreasAdmin, PeriodosAdmin, ConfiguracionAdmin, AprobacionesAdmin, BitacoraAdmin, IntegracionEddAdmin } from "./pages/admin/AdminPages";
+import { CascadaOrganizacional } from "./pages/cascada/CascadaOrganizacional";
 
 const TITULOS: Record<string, Record<string, [string, string]>> = {
   Administrador: {
@@ -79,9 +80,12 @@ export function App() {
     }
   }
 
-  const [titulo, subtitulo] = TITULOS[usuarioActual.rol]?.[activeKey] ?? ["Portal", ""];
+  const [titulo, subtitulo] = activeKey === "cascada-organizacional"
+    ? ["Despliegue jerárquico", "Dirección → líderes → sublíderes → equipos, sin límite fijo de niveles"]
+    : TITULOS[usuarioActual.rol]?.[activeKey] ?? ["Portal", ""];
 
   function renderPagina() {
+    if (activeKey === "cascada-organizacional") return <CascadaOrganizacional />;
     switch (usuarioActual!.rol) {
       case "Administrador":
         switch (activeKey) {
